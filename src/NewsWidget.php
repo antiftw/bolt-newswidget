@@ -18,32 +18,28 @@ use Bolt\Widget\StopwatchAwareInterface;
 use Bolt\Widget\StopwatchTrait;
 use Bolt\Widget\TwigAwareInterface;
 use Symfony\Component\HttpClient\HttpClient;
-use Tightenco\Collect\Support\Collection;
+use Illuminate\Support\Collection;
 
 class NewsWidget extends BaseWidget implements TwigAwareInterface, RequestAwareInterface, CacheAwareInterface, StopwatchAwareInterface
 {
     use CacheTrait;
     use StopwatchTrait;
 
-    protected $name = 'News Widget';
-    protected $target = AdditionalTarget::WIDGET_BACK_DASHBOARD_ASIDE_TOP;
-    protected $priority = 150;
-    protected $template = '@news-widget/news.html.twig';
-    protected $zone = RequestZone::BACKEND;
-    protected $cacheDuration = 4 * 3600;
+    protected ?string $name = 'News Widget';
+    protected string $target = AdditionalTarget::WIDGET_BACK_DASHBOARD_ASIDE_TOP;
+    protected ?int $priority = 150;
+    protected ?string $template = '@news-widget/news.html.twig';
+    protected ?string $zone = RequestZone::BACKEND;
+    protected int $cacheDuration = 4 * 3600;
 
-    protected $source = 'https://news.boltcms.io/';
+    protected string $source = 'https://news.boltcms.io/';
 
     protected function run(array $params = []): ?string
     {
         $news = $this->getNews();
 
         try {
-            if (isset($news['information'])) {
-                $currentItem = $news['information'];
-            } else {
-                $currentItem = $news['error'];
-            }
+            $currentItem = $news['information'] ?? $news['error'];
 
             $context = [
                 'title' => $currentItem['fieldValues']['title'],
@@ -75,7 +71,7 @@ class NewsWidget extends BaseWidget implements TwigAwareInterface, RequestAwareI
             $client = HttpClient::create();
             $fetchedNewsData = $client->request('GET', $this->source, $options)->getContent();
         } catch (\Throwable $e) {
-            $message = Str::shyphenate(preg_replace('/hash=[a-z0-9\%]+/i', '', $e->getMessage()));
+            $message = Str::shyphenate(preg_replace('/hash=[a-z0-9%]+/i', '', $e->getMessage()));
 
             return [
                 'error' => [
@@ -102,7 +98,7 @@ class NewsWidget extends BaseWidget implements TwigAwareInterface, RequestAwareI
         // Iterate over the items, pick the first news-item that
         // applies and the first alert we need to show
         foreach ($fetchedNewsItems as $item) {
-            $type = isset($item->type) ? $item->type : 'information';
+            $type = $item->type ?? 'information';
             if (! isset($news[$type])
                 && (empty($item->target_version) || Version::compare($item->target_version, '>'))
             ) {
